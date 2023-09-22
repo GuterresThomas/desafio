@@ -104,6 +104,13 @@ pub async fn update_user(
     Ok(())
 }
 
+pub async fn delete_user(client: &Client, user_id:i32) -> Result<(), Error> {   
+    let query = format!("DELETE FROM users_rust WHERE id = {}", user_id);
+    client.execute(&query, &[]).await?;
+
+    Ok(())
+}
+
 use tokio_postgres::{NoTls, Error};
 
 #[tokio::main] // By default, tokio_postgres uses the tokio crate as its runtime.
@@ -165,6 +172,18 @@ async fn main() -> Result<(), Error> {
             eprintln!("Erro ao atualizar o usuário: {}", e);
         }
     }*/
+
+    /* let user_id_to_delete = 1;
+
+    match delete_user(&client, user_id_to_delete).await {
+        Ok(()) => {
+        println!("Usuário excluido com sucesso!");
+        }
+        Err(e) => {
+            eprintln!("Erro ao excluir o usuário: {}", e);
+        }
+    } */
+
 
     Ok(())
 }
