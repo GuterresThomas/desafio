@@ -2,10 +2,12 @@ use tokio::net::TcpListener;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use serde::{Serialize, Deserialize};
 use tokio_postgres::{Client, GenericClient};
+use tokio_postgres::{NoTls, Error};
+
 
 
 #[tokio::main]
-async fn server() -> Result<(), Box<dyn std::error::Error>> {
+async fn start_tcp_server() -> Result<(), Box<dyn std::error::Error>> {
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
 
     loop {
@@ -111,7 +113,6 @@ pub async fn delete_user(client: &Client, user_id:i32) -> Result<(), Error> {
     Ok(())
 }
 
-use tokio_postgres::{NoTls, Error};
 
 #[tokio::main] // By default, tokio_postgres uses the tokio crate as its runtime.
 async fn main() -> Result<(), Error> {
@@ -186,6 +187,9 @@ async fn main() -> Result<(), Error> {
 
 
     Ok(())
+
+   
+   
 }
 
 
