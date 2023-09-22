@@ -1,5 +1,6 @@
 use tokio::net::TcpListener;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use serde::{Serialize, Deserialize};
 
 #[tokio::main]
 async fn server() -> Result<(), Box<dyn std::error::Error>> {
@@ -58,9 +59,23 @@ async fn main() -> Result<(), Error> {
     let value: &str = rows[0].get(0);
     assert_eq!(value, "hello world");
 
+    /* let user_document = "exemplo";
+    let credit_card_token = "token123";
+    let value = 100;
+
+    match add_user(&client, user_document, credit_card_token, value).await {
+        Ok(()) => {
+            println!("Usuário adicionado com sucesso.");
+        }
+        Err(e) => {
+            eprintln!("Erro ao adicionar o usuário: {}", e);
+        }
+    } */
+
     Ok(())
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct User {
     id: i32,
     user_document: String,
@@ -86,7 +101,7 @@ pub async fn add_user(
     value: i32,
 )-> Result<(), Error>{
     let query = format!(
-        "*INSERT INTO users_rust (
+        "INSERT INTO users_rust (
         user_document, credit_card_token, value)
         VALUES('{}', '{}', '{}')",
         user_document, credit_card_token, value
