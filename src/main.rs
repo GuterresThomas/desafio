@@ -1,7 +1,7 @@
 use tokio::net::TcpListener;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use serde::{Serialize, Deserialize};
-use tokio_postgres::Client;
+use tokio_postgres::{Client, GenericClient};
 
 
 #[tokio::main]
@@ -92,6 +92,17 @@ pub async fn read_user(client: &Client) -> Result<Vec<User>, Error> {
     Ok(users)
 }
 
+pub async fn update_user(
+    client: &Client,
+    id: i32,
+    new_value: i32,
+) -> Result<(), Error> {
+    let query = format!("UPDATE users_rust SET value = {} WHERE id = {}",
+    new_value, id);
+    client.execute(&query, &[]).await?;
+
+    Ok(())
+}
 
 use tokio_postgres::{NoTls, Error};
 
@@ -142,6 +153,18 @@ async fn main() -> Result<(), Error> {
             eprintln!("Erro ao ler os usuários: {}", e);
         }
     }
+
+    /*let user_id_to_update = 1;
+    let new_value = 200;
+
+    match update_user(&client, user_id_to_update, new_value).await {
+        Ok(()) => {
+            println!("Usuário atualizado com sucesso.");
+        }
+        Err(e) => {
+            eprintln!("Erro ao atualizar o usuário: {}", e);
+        }
+    }*/
 
     Ok(())
 }
