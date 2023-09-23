@@ -17,7 +17,7 @@ async fn main() -> Result<(), Error> {
 
     // The connection object performs the actual communication with the database,
     // so spawn it off to run on its own.
-    tokio::spawn(async move {
+     tokio::spawn(async move {
         if let Err(e) = connection.await {
             eprintln!("connection error: {}", e);
         }
@@ -75,8 +75,10 @@ async fn main() -> Result<(), Error> {
         }
     } */
 
-    
+    use tcp_server::tcp_server::start_tcp_server;
 
+    start_tcp_server();
+   
     Ok(())
    
    
