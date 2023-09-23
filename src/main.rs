@@ -77,7 +77,7 @@ async fn main() -> Result<(), Error> {
         }
     } */
 
-    tcp_server_result.await??;
+    tcp_server_result.await;
     
     Ok(())
    

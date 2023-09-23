@@ -1,11 +1,11 @@
 pub mod tcp_server {
-/* 
+
 use tokio::net::TcpListener;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 
 
-pub async fn start_tcp_server() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_tcp_server() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
 
     loop {
@@ -36,5 +36,5 @@ pub async fn start_tcp_server() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
 }
-*/
+
 }    
