@@ -1,7 +1,4 @@
-use tokio::net::TcpListener;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use serde::{Serialize, Deserialize};
-use tokio_postgres::{Client, GenericClient};
+use warp::Filter;
 use tokio_postgres::{NoTls, Error};
 
 mod tcp_server;
@@ -14,12 +11,8 @@ mod routes;
 
 #[tokio::main] // By default, tokio_postgres uses the tokio crate as its runtime.
 async fn main() -> Result<(), Error> {
-    use http_server::http_server::main as http_main;
-
-    let http_server_result = tokio::spawn(http_main())
     use tcp_server::tcp_server::start_tcp_server;
     let tcp_server_result = tokio::spawn(start_tcp_server());
-
     // Connect to the database.
     let (client, connection) =
         tokio_postgres::connect("host=localhost user=postgres password=1234 dbname=postgres", NoTls).await?;
@@ -31,7 +24,12 @@ async fn main() -> Result<(), Error> {
             eprintln!("connection error: {}", e);
         }
     });
+    let routes = warp::any().map(|| "Hello, World!");
 
+    // Start the Warp HTTP server
+    warp::serve(routes).run(([127, 0, 0, 1], 3000)).await;
+
+    
 
     
     /* let user_document = "exemplo";
@@ -85,15 +83,15 @@ async fn main() -> Result<(), Error> {
     } */
 
     let _ = tcp_server_result.await;
-    let _ = http_server_result.await;
 
-    
-    
-    
+    use warp::Filter;
+   
     
     Ok(())
    
    
 }
+
+
 
 
