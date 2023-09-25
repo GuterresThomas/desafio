@@ -7,13 +7,19 @@ use tokio_postgres::{NoTls, Error};
 mod tcp_server;
 mod database;
 mod http_server;
+mod routes;
+
 
 
 
 #[tokio::main] // By default, tokio_postgres uses the tokio crate as its runtime.
 async fn main() -> Result<(), Error> {
+    use http_server::http_server::main as http_main;
+
+    let http_server_result = tokio::spawn(http_main())
     use tcp_server::tcp_server::start_tcp_server;
     let tcp_server_result = tokio::spawn(start_tcp_server());
+
     // Connect to the database.
     let (client, connection) =
         tokio_postgres::connect("host=localhost user=postgres password=1234 dbname=postgres", NoTls).await?;
@@ -79,8 +85,10 @@ async fn main() -> Result<(), Error> {
     } */
 
     let _ = tcp_server_result.await;
-    let _ = http_server::http_server::main();
+    let _ = http_server_result.await;
 
+    
+    
     
     
     Ok(())

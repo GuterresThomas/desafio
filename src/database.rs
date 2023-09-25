@@ -1,8 +1,10 @@
 pub mod database {
     use tokio_postgres::{Client, Error};
     use serde::{Serialize, Deserialize};
-
+    
     #[derive(Debug, Serialize, Deserialize)]
+
+    
     pub struct User {
         id: i32,
         user_document: String,
@@ -20,6 +22,7 @@ pub mod database {
             }
         }
     }
+    
 
 pub async fn add_user(
     client: &tokio_postgres::Client,
@@ -42,6 +45,7 @@ pub async fn add_user(
 pub async fn read_user(client: &Client) -> Result<Vec<User>, Error> {
     let query = "SELECT id, user_document, credit_card_token, value FROM users_rust";
     let rows = client.query(query, &[]).await?;
+    
 
     let mut users = Vec::new();
 
