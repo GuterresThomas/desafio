@@ -6,6 +6,7 @@ use tokio_postgres::{NoTls, Error};
 
 mod tcp_server;
 mod database;
+mod http_server;
 
 
 
@@ -77,7 +78,10 @@ async fn main() -> Result<(), Error> {
         }
     } */
 
-    tcp_server_result.await;
+    let _ = tcp_server_result.await;
+    let _ = http_server::http_server::main();
+
+    
     
     Ok(())
    
