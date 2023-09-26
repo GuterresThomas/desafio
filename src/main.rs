@@ -137,16 +137,14 @@ let routes = create_user
             eprintln!("Erro ao iniciar o servidor HTTP: {}", custom_err);
             Err(custom_err)
         }
-    }
-    .unwrap_or_else(|e| {
-        eprintln!("Erro ao iniciar o servidor HTTP: {}", e);
-        Err(Error::from(e))
-    });
+    };
     Ok(())
 
    
    
 }
+
+
 
 
 
