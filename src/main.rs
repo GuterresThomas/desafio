@@ -91,41 +91,57 @@ async fn main() -> Result<(), Error> {
             }
         });
 
-/*   // Rota para excluir um usuário.
+  // Rota para excluir um usuário.
 let delete_user_route = warp::path!("users" / "delete" / i32)
 .and(warp::delete())
 .and(db_filter.clone())
 .and_then(|user_id: i32, client: Arc<Mutex<tokio_postgres::Client>>| {
     let client_clone = client.clone();
-    let task = async move {
+
+    async move {
         let client = client_clone.lock().unwrap();
         match delete_user(&client, user_id).await {
-            Ok(_) => Ok(warp::reply::json(&format!("Usuário {} excluído com sucesso", user_id))),
+            Ok(_) => {
+                let response = warp::reply::json(&format!("Usuário {} excluído com sucesso", user_id));
+                Ok(warp::reply::with_status(response, warp::http::StatusCode::OK))
+            }
             Err(e) => {
                 eprintln!("Erro ao excluir usuário: {}", e);
-                Ok(warp::reply::json(&ErrorResponse { error: "Erro ao excluir usuário".to_string() }))
+                let error_response = warp::reply::json(&ErrorResponse { error: "Erro ao excluir usuário".to_string() });
+                Ok(warp::reply::with_status(error_response, warp::http::StatusCode::INTERNAL_SERVER_ERROR))
             }
         }
-    };
+    }
+});
 
-    warp::reply::future(task)
-});*/
 
 
 
 // Combine todas as rotas em uma única rota.
 let routes = create_user
     .or(read_users)
-    .or(update_user_route);
-    //.or(delete_user_route); // Certifique-se de incluir a rota de exclusão, se ela existir.
+    .or(update_user_route)
+    .or(delete_user_route); 
 
 // Inicie o servidor HTTP e use .await.unwrap() para obter o resultado.
-warp::serve(routes)
-    .run(([127, 0, 0, 1], 3030))
-    .await
-    .expect("Falha ao iniciar o servidor HTTP");
-  
-    
+
+    let server_result = warp::serve(routes).run(([127, 0, 0, 1], 3030));
+
+    match server_result.await {
+        Ok(_) => {
+            println!("Server started successfully.");
+            Ok(())
+        }
+        Err(warp_err) => {
+            let custom_err = Error::from(warp_err);
+            eprintln!("Erro ao iniciar o servidor HTTP: {}", custom_err);
+            Err(custom_err)
+        }
+    }
+    .unwrap_or_else(|e| {
+        eprintln!("Erro ao iniciar o servidor HTTP: {}", e);
+        Err(Error::from(e))
+    });
     Ok(())
 
    
