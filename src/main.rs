@@ -7,7 +7,7 @@ mod http_server;
 mod routes;
 use std::sync::{Arc, Mutex};
 use tokio::task;
-use std::future::Future;
+
 
 // Importe o módulo database para usar as funções e tipos relevantes.
 use database::database::{add_user, read_user, update_user, delete_user, User};
@@ -91,33 +91,40 @@ async fn main() -> Result<(), Error> {
             }
         });
 
-   // Rota para excluir um usuário.
-   let delete_user_route = warp::path!("users" / "delete" / i32)
-   .and(warp::delete())
-   .and(db_filter.clone())
-   .and_then(|user_id: i32, client: Arc<Mutex<tokio_postgres::Client>>| {
-       let client_clone = client.clone();
-       let task = task::spawn_blocking(move || {
-           let client = client_clone.lock().unwrap(); // Extrair o tokio_postgres::Client do Mutex.
-           let result = delete_user(&client, user_id);
-           // Transforme o Result em uma Future.
-           async move { result }
-       });
-       
-       warp::reply::future(task)
-   });
+/*   // Rota para excluir um usuário.
+let delete_user_route = warp::path!("users" / "delete" / i32)
+.and(warp::delete())
+.and(db_filter.clone())
+.and_then(|user_id: i32, client: Arc<Mutex<tokio_postgres::Client>>| {
+    let client_clone = client.clone();
+    let task = async move {
+        let client = client_clone.lock().unwrap();
+        match delete_user(&client, user_id).await {
+            Ok(_) => Ok(warp::reply::json(&format!("Usuário {} excluído com sucesso", user_id))),
+            Err(e) => {
+                eprintln!("Erro ao excluir usuário: {}", e);
+                Ok(warp::reply::json(&ErrorResponse { error: "Erro ao excluir usuário".to_string() }))
+            }
+        }
+    };
+
+    warp::reply::future(task)
+});*/
 
 
 
-    // Combine todas as rotas em uma única rota.
-    let routes = create_user.or(read_users).or(update_user_route).or(delete_user_route);
+// Combine todas as rotas em uma única rota.
+let routes = create_user
+    .or(read_users)
+    .or(update_user_route);
+    //.or(delete_user_route); // Certifique-se de incluir a rota de exclusão, se ela existir.
 
-    // Inicie o servidor HTTP.
-    warp::serve(routes)
-        .run(([127, 0, 0, 1], 3030))
-        .await;
-
-   
+// Inicie o servidor HTTP e use .await.unwrap() para obter o resultado.
+warp::serve(routes)
+    .run(([127, 0, 0, 1], 3030))
+    .await
+    .expect("Falha ao iniciar o servidor HTTP");
+  
     
     Ok(())
 
