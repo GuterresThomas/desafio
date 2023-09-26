@@ -1,12 +1,13 @@
 pub mod http_server {
     use warp::Filter;
-    use warp::http::Error;
+
 
     #[tokio::main]
-    pub async fn main() {
-    // Match any request and return hello world!
-    let routes = warp::any().map(|| "Hello, World!");
-
-    warp::serve(routes).run(([127, 0, 0, 1], 3000)).await;
+    pub async fn start_http_server() {
+        // Define Warp routes
+        let routes = warp::any().map(|| "Hello, World!");
+    
+        // Start the Warp HTTP server
+        warp::serve(routes).run(([127, 0, 0, 1], 3000)).await;
 }
 }

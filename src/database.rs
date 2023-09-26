@@ -1,15 +1,16 @@
 pub mod database {
     use tokio_postgres::{Client, Error};
     use serde::{Serialize, Deserialize};
+    use warp::Reply;
     
     #[derive(Debug, Serialize, Deserialize)]
 
     
     pub struct User {
-        id: i32,
-        user_document: String,
-        credit_card_token: String,
-        value: i32,
+        pub id: i32,
+        pub user_document: String,
+        pub credit_card_token: String,
+        pub value: i32,
     }
 
     impl User {
@@ -22,7 +23,8 @@ pub mod database {
             }
         }
     }
-    
+
+     
 
 pub async fn add_user(
     client: &tokio_postgres::Client,

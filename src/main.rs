@@ -1,10 +1,21 @@
 use warp::Filter;
 use tokio_postgres::{NoTls, Error};
-
+use serde::{Serialize, Deserialize};
 mod tcp_server;
 mod database;
 mod http_server;
 mod routes;
+use std::sync::{Arc, Mutex};
+use tokio::task;
+use std::future::Future;
+
+// Importe o módulo database para usar as funções e tipos relevantes.
+use database::database::{add_user, read_user, update_user, delete_user, User};
+
+#[derive(Serialize, Deserialize)]
+struct ErrorResponse {
+    error: String,
+}
 
 
 
@@ -24,70 +35,92 @@ async fn main() -> Result<(), Error> {
             eprintln!("connection error: {}", e);
         }
     });
-    let routes = warp::any().map(|| "Hello, World!");
-
-    // Start the Warp HTTP server
-    warp::serve(routes).run(([127, 0, 0, 1], 3000)).await;
 
     
-
-    
-    /* let user_document = "exemplo";
-    let credit_card_token = "token123";
-    let value = 100;
-
-    match add_user(&client, user_document, credit_card_token, value).await {
-        Ok(()) => {
-            println!("Usuário adicionado com sucesso.");
-        }
-        Err(e) => {
-            eprintln!("Erro ao adicionar o usuário: {}", e);
-        }
-    } */
-
-    use database::database::read_user;
-
-    match read_user(&client).await {
-        Ok(users) => {
-            println!("Usuários lidos com sucesso:");
-            for user in users {
-                println!("{:?}", user);
-            }
-        }
-        Err(e) => {
-            eprintln!("Erro ao ler os usuários: {}", e);
-        }
-    }
-
-    /*let user_id_to_update = 1;
-    let new_value = 200;
-
-    match update_user(&client, user_id_to_update, new_value).await {
-        Ok(()) => {
-            println!("Usuário atualizado com sucesso.");
-        }
-        Err(e) => {
-            eprintln!("Erro ao atualizar o usuário: {}", e);
-        }
-    }*/
-
-    /* let user_id_to_delete = 1;
-
-    match delete_user(&client, user_id_to_delete).await {
-        Ok(()) => {
-        println!("Usuário excluido com sucesso!");
-        }
-        Err(e) => {
-            eprintln!("Erro ao excluir o usuário: {}", e);
-        }
-    } */
-
     let _ = tcp_server_result.await;
 
-    use warp::Filter;
+
+    let client = Arc::new(Mutex::new(client));
+
+    // Filtro para fornecer o cliente do banco de dados a cada rota.
+    let db_filter = warp::any().map(move || client.clone());
+
+    // Rota para criar um novo usuário.
+    let create_user = warp::path!("users" / "create")
+        .and(warp::post())
+        .and(warp::body::json())
+        .and(db_filter.clone()) // Use a captura de movimento para clonar o cliente.
+        .and_then(|user: User, client: Arc<Mutex<tokio_postgres::Client>>| async move {
+            let client = client.lock().unwrap(); // Desbloqueie o cliente dentro do Mutex.
+            match add_user(&client, &user.user_document, &user.credit_card_token, user.value).await {
+                Ok(()) => Ok(warp::reply::json(&user)),
+                Err(e) => {
+                    eprintln!("Erro ao criar usuário: {}", e);
+                    Ok(warp::reply::json(&ErrorResponse { error: "Erro ao criar usuário".to_string() }))
+                }
+            }
+        });
+
+    // Rota para ler todos os usuários.
+        let read_users = warp::path!("users" / "read")
+        .and(warp::get())
+        .and(db_filter.clone())
+        .and_then(|client: Arc<Mutex<tokio_postgres::Client>>| async move {
+            let client = client.lock().unwrap();
+            match read_user(&client).await {
+                Ok(users) => Ok(warp::reply::json(&users)),
+                Err(e) => {
+                    eprintln!("Erro ao ler usuários: {}", e);
+                    Ok(warp::reply::json(&ErrorResponse { error: "Erro ao ler usuários".to_string() }))
+                }
+            }
+        });
+
+        // Rota para atualizar um usuário.
+        let update_user_route = warp::path!("users" / "update" / i32 / i32)
+        .and(warp::put())
+        .and(db_filter.clone())
+        .and_then(|user_id: i32, new_value: i32, client: Arc<Mutex<tokio_postgres::Client>>| async move {
+            let client = client.lock().unwrap();
+            match update_user(&client, user_id, new_value).await {
+                Ok(()) => Ok(warp::reply::json(&format!("Usuário {} atualizado com sucesso", user_id))),
+                Err(e) => {
+                    eprintln!("Erro ao atualizar usuário: {}", e);
+                    Ok(warp::reply::json(&ErrorResponse { error: "Erro ao atualizar usuário".to_string() }))
+                }
+            }
+        });
+
+   // Rota para excluir um usuário.
+   let delete_user_route = warp::path!("users" / "delete" / i32)
+   .and(warp::delete())
+   .and(db_filter.clone())
+   .and_then(|user_id: i32, client: Arc<Mutex<tokio_postgres::Client>>| {
+       let client_clone = client.clone();
+       let task = task::spawn_blocking(move || {
+           let client = client_clone.lock().unwrap(); // Extrair o tokio_postgres::Client do Mutex.
+           let result = delete_user(&client, user_id);
+           // Transforme o Result em uma Future.
+           async move { result }
+       });
+       
+       warp::reply::future(task)
+   });
+
+
+
+    // Combine todas as rotas em uma única rota.
+    let routes = create_user.or(read_users).or(update_user_route).or(delete_user_route);
+
+    // Inicie o servidor HTTP.
+    warp::serve(routes)
+        .run(([127, 0, 0, 1], 3030))
+        .await;
+
    
     
     Ok(())
+
    
    
 }
